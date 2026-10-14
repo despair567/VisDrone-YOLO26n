@@ -1,16 +1,18 @@
 1. 主要功能
 数据集划分 (data_split.py)：自动将 VisDrone 原始数据集按 8:1:1 的比例划分为训练集、验证集和测试集（代码目前实际复制了 train 和 val，test 部分未复制），并按 YOLO 结构生成对应目录。
-
+/n
 标签格式转换 (format_transforms.py)：将 VisDrone 特有的标注格式（x1, y1, bw, bh, score, class_id）就地转换为 YOLO 格式（class_id x_center y_center w h），并进行类别映射和越界坐标裁剪。
-
+/n
 模型训练 (train.py)：基于 yolo26n.pt 预训练权重，加载 Visdrone.yaml 配置文件进行微调训练，默认训练 10 轮，批次大小 4。
-
+/n
 单张/批量推理 (test_one.py, test_more.py)：支持对单张图片或整个文件夹的图片进行推理，并保存带画框的推理结果。
-
+/n
 Web 可视化系统 (streamlit_app.py)：基于 Streamlit 搭建的交互式网页端，支持上传图片或选择验证集中的示例图片，动态调整置信度阈值，并实时展示检测结果、画框图像和详细的目标信息。
-
+/n
 2. 安装方法
+/n
 2.1 环境要求
+/n
 Python 3.8 及以上版本
 
 推荐使用 Anaconda 创建虚拟环境
@@ -19,12 +21,13 @@ Python 3.8 及以上版本
 
 2.2 安装依赖
 在项目根目录下，运行以下命令安装所需的 Python 库：
-
+/n
 bash
 pip install ultralytics streamlit opencv-python numpy pillow
+/n
 2.3 准备数据集
 下载 VisDrone2019-DET 数据集。
-
+/n
 将数据集解压并放置在项目根目录的 dataset/ 文件夹下，确保目录结构为：
 
 text
