@@ -1,98 +1,185 @@
-1. 主要功能
-数据集划分 (data_split.py)：自动将 VisDrone 原始数据集按 8:1:1 的比例划分为训练集、验证集和测试集（代码目前实际复制了 train 和 val，test 部分未复制），并按 YOLO 结构生成对应目录。
-/n
-标签格式转换 (format_transforms.py)：将 VisDrone 特有的标注格式（x1, y1, bw, bh, score, class_id）就地转换为 YOLO 格式（class_id x_center y_center w h），并进行类别映射和越界坐标裁剪。
-/n
-模型训练 (train.py)：基于 yolo26n.pt 预训练权重，加载 Visdrone.yaml 配置文件进行微调训练，默认训练 10 轮，批次大小 4。
-/n
-单张/批量推理 (test_one.py, test_more.py)：支持对单张图片或整个文件夹的图片进行推理，并保存带画框的推理结果。
-/n
-Web 可视化系统 (streamlit_app.py)：基于 Streamlit 搭建的交互式网页端，支持上传图片或选择验证集中的示例图片，动态调整置信度阈值，并实时展示检测结果、画框图像和详细的目标信息。
-/n
-2. 安装方法
-/n
-2.1 环境要求
-/n
-Python 3.8 及以上版本
+# VisDrone 无人机航拍图目标检测系统
 
-推荐使用 Anaconda 创建虚拟环境
+基于 Ultralytics YOLO26n 与 VisDrone2019-DET 数据集的无人机航拍场景目标检测系统，支持数据集预处理、模型训练、单张 / 批量推理以及 Streamlit 可视化 Web 界面。
 
-支持 GPU (CUDA) 环境以加速训练和推理
+## 1. 主要功能
 
-2.2 安装依赖
-在项目根目录下，运行以下命令安装所需的 Python 库：
-/n
-bash
-pip install ultralytics streamlit opencv-python numpy pillow
-/n
-2.3 准备数据集
-下载 VisDrone2019-DET 数据集。
-/n
-将数据集解压并放置在项目根目录的 dataset/ 文件夹下，确保目录结构为：
+- **数据集预处理**
+  - `data_split.py`：将 VisDrone 原始数据集按 8:1:1 随机划分为训练集 / 验证集 / 测试集（随机种子固定为 42，划分结果可复现）。
+  - `format_transforms.py`：将 VisDrone 原始标注格式（`x, y, w, h, score, category, ...`）就地转换为 YOLO 归一化格式（`class x_center y_center w h`），自动裁剪越界框并过滤无效类别。
+- **模型训练**
+  - `train.py`：基于预训练权重 `yolo26n.pt` 在 VisDrone 数据集上微调训练，训练配置由 `Visdrone.yaml` 管理。
+- **模型推理**
+  - `test_one.py`：对单张图片进行推理，弹出窗口显示并保存画框结果。
+  - `test_more.py`：对 `test_images/` 目录下的图片进行批量推理。
+- **可视化 Web 界面**
+  - `streamlit_app.py`：Streamlit 交互界面，支持上传图片或选择验证集示例图片，可调置信度阈值，实时展示检测框、类别、置信度及目标数量。
 
-text
+### 检测类别（10 类）
+
+| 类别 ID | 名称 | 类别 ID | 名称 |
+| :---: | --- | :---: | --- |
+| 0 | pedestrian（行人） | 5 | truck（卡车） |
+| 1 | people（人群） | 6 | tricycle（三轮车） |
+| 2 | bicycle（自行车） | 7 | awning-tricycle（带篷三轮车） |
+| 3 | car（轿车） | 8 | bus（公交车） |
+| 4 | van（面包车） | 9 | motor（摩托车） |
+
+## 2. 安装方法
+
+### 环境要求
+
+- Python 3.8+
+- 可选：NVIDIA GPU + CUDA（训练时 `device=0` 使用 GPU，无 GPU 可改为 `device="cpu"`）
+
+### 安装依赖
+
+本项目基于 Ultralytics（项目根目录已包含 `ultralytics-main` 源码），安装方式二选一：
+
+```bash
+# 方式一：直接安装 ultralytics 发行版（推荐）
+pip install ultralytics
+
+# 方式二：从项目内源码安装
+pip install -e ultralytics-main
+```
+
+再安装 Web 界面依赖：
+
+```bash
+pip install streamlit opencv-python pillow
+```
+
+### 准备数据集
+
+1. 下载 [VisDrone2019-DET](https://github.com/VisDrone/VisDrone-Dataset) 数据集，放入 `dataset/` 目录，结构如下：
+
+```
 dataset/
 └── VisDrone2019-DET-train/
-    ├── images/          # 存放 .jpg 图片
-    └── annotations/     # 存放 .txt 原始标签
-3. 使用方法
-步骤一：数据预处理
-运行 data_split.py 对原始数据进行划分，生成 VisDrone_split 目录：
+    ├── images/        # 原始图片
+    └── annotations/   # 原始标注（.txt）
+```
 
-bash
+2. 运行数据划分与格式转换脚本（详见下一节），生成 `VisDrone_split/` 数据集目录。
+
+## 3. 使用方法
+
+按以下顺序执行即可完成从数据准备到推理的完整流程：
+
+### 步骤 1：划分数据集
+
+```bash
 python data_split.py
-运行 format_transforms.py 进行 YOLO 格式标签转换：
+```
 
-bash
+输出 `VisDrone_split/`，包含 `images/train`、`images/val`、`labels/train`、`labels/val`（训练集约 6471 张，验证集约 548 张）。
+
+### 步骤 2：转换标注格式
+
+```bash
 python format_transforms.py
-⚠️ 注意：此脚本为就地覆盖转换（In-place conversion），会直接修改 VisDrone_split 下的标签文件。如果你需要保留原始 VisDrone 格式的标签，请提前备份。
+```
 
-步骤二：模型训练
-确保项目根目录下已有 Visdrone.yaml 配置文件（用于指定数据集路径和类别数），然后运行：
+将 `VisDrone_split/labels/` 下的标注就地覆盖为 YOLO 格式。
 
-bash
+### 步骤 3：训练模型
+
+```bash
 python train.py
-注：训练结束后，权重文件通常保存在 runs/detect/train/weights/best.pt。
+```
 
-步骤三：模型测试与推理
-单张图片测试：将待测图片命名为 test.jpg 放在根目录，运行：
+训练参数（可在 `train.py` 中修改）：`epochs=10`、`imgsz=640`、`batch=4`、`device=0`。
 
-bash
+> Windows 下必须保持 `workers=0`，否则多进程数据加载会报错。
+
+训练完成后，最佳权重保存在 `runs/detect/train/weights/best.pt`。
+
+### 步骤 4：推理
+
+**单张图片：**
+
+```bash
 python test_one.py
-批量图片测试：将待测图片放入 test_images/ 文件夹，运行：
+```
 
-bash
+对 `test.jpg` 推理，结果显示并保存到 `runs/detect/predict/`。
+
+**批量图片：**
+
+```bash
 python test_more.py
-步骤四：启动 Web 可视化系统
-运行以下命令启动 Streamlit 应用：
+```
 
-bash
+对 `test_images/` 目录下所有图片推理，结果保存到 `runs/detect/predict-2/`。
+
+**Web 界面：**
+
+```bash
 streamlit run streamlit_app.py
-启动后，浏览器会自动打开页面（默认地址为 http://localhost:8501）。您可以在左侧侧边栏调整置信度阈值，在左侧选择示例图片或上传本地图片，点击“开始推理”即可在右侧查看结果。
+```
 
-4. 输入输出示例
-4.1 输入示例
-图像输入：无人机航拍的高分辨率图像（如 .jpg, .jpeg, .png 格式）。支持单张上传（test.jpg）或选择验证集图片（VisDrone_split/images/val/）。
+浏览器打开后，上传图片或在侧边栏选择示例图片，调节置信度阈值（默认 0.25），点击「开始推理」即可查看检测结果。
 
-参数输入：置信度阈值（Confidence Threshold），默认为 0.25，可在 Streamlit 侧边栏通过滑块在 0.0 - 1.0 之间调整。
+## 4. 输入输出示例
 
-4.2 输出示例
-图像输出：在原图上绘制绿色边界框（Bounding Box），并在框上方标注类别名称和置信度（如 car: 0.85）。
+### 输入
 
-控制台/终端输出（以 test_one.py 为例）：
+- **图片**：JPG / JPEG / PNG 格式的无人机航拍图，示例见 `test.jpg` 与 `test_images/` 目录。
+- **标注（训练用）**：YOLO 格式 `.txt`，每行一个目标：
 
-text
-image 1/1 /path/to/test.jpg: 640x640 3 cars, 1 pedestrian, 2 trucks, 45.2ms
-Speed: 1.5ms preprocess, 45.2ms inference, 0.8ms postprocess per image at shape (1, 3, 640, 640)
-Results saved to runs/detect/predict
-Web 界面输出：
+```
+3 0.512305 0.486328 0.045898 0.062500
+```
 
-右侧展示带有检测框的图片。
+含义：`类别ID 中心x 中心y 宽 高`（均为 0~1 归一化坐标），上例表示一辆轿车（car）。
 
-下方以列表形式展示检测信息：
+### 输出
 
-text
-🎯 目标 1: car (置信度: 0.89)
+- **推理结果图**：画有绿色检测框的图片，每个框标注 `类别: 置信度`，例如 `car: 0.87`，保存在 `runs/detect/predict*/` 下。
+- **Web 界面检测信息**：逐目标列出类别与置信度，并统计目标总数，示例：
+
+```
+🎯 目标 1: car (置信度: 0.87)
 🎯 目标 2: pedestrian (置信度: 0.76)
-🎯 目标 3: truck (置信度: 0.65)
-底部显示成功提示：检测完成！共识别到 3 个目标。
+✅ 检测完成！共识别到 2 个目标
+```
+
+- **训练产物**（`runs/detect/train-2/`）：训练曲线 `results.png`、混淆矩阵 `confusion_matrix.png`、F1 / PR 曲线及权重文件。
+
+### 参考指标（YOLO26n，10 epochs，imgsz=640）
+
+| 指标 | 数值 |
+| --- | --- |
+| Precision | 0.358 |
+| Recall | 0.274 |
+| mAP@50 | 0.251 |
+| mAP@50-95 | 0.140 |
+
+> 增加训练轮数、增大输入分辨率或使用更大的模型（如 yolo26s/m）可进一步提升精度。
+
+## 项目结构
+
+```
+visdrone/
+├── Visdrone.yaml          # 数据集配置文件
+├── data_split.py          # 数据集划分脚本
+├── format_transforms.py   # 标注格式转换脚本（VisDrone → YOLO）
+├── train.py               # 训练脚本
+├── test_one.py            # 单张图片推理
+├── test_more.py           # 批量图片推理
+├── streamlit_app.py       # Streamlit 可视化界面
+├── yolo26n.pt             # 预训练权重
+├── dataset/               # 原始 VisDrone 数据集
+├── VisDrone_split/        # 划分并转换后的数据集
+├── test_images/           # 批量测试图片
+├── weights/               # 权重目录
+├── runs/                  # 训练与推理输出
+└── ultralytics-main/      # Ultralytics 源码
+```
+
+## 许可证
+
+本项目基于 [MIT License](LICENSE) 开源。
+
+> 注意：项目依赖的 Ultralytics 采用 AGPL-3.0 许可证（见 `ultralytics-main/LICENSE`），如需商业用途请遵循其许可要求或获取 [Ultralytics 企业许可](https://ultralytics.com/license)。
