@@ -93,7 +93,7 @@ python train.py
 
 > Windows 下必须保持 `workers=0`，否则多进程数据加载会报错。
 
-训练完成后，最佳权重保存在 `runs/detect/train/weights/best.pt`。
+训练完成后，最佳权重保存在 `runs/detect/train-2/weights/best.pt`。
 
 ### 步骤 4：推理
 
