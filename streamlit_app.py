@@ -7,7 +7,7 @@ from PIL import Image
 
 st.set_page_config(page_title="自己训练的yolo26n的推理测试", page_icon="🚀", layout="wide")
 
-MODEL_PATH = "runs/detect/train/weights/best.pt"
+MODEL_PATH = "runs/detect/train-2/weights/best.pt"
 DEFAULT_CONFIDENCE = 0.25
 
 
