@@ -1,15 +1,28 @@
 from ultralytics import YOLO
 
-if __name__ == '__main__':
-    # 加载模型
-    model = YOLO('yolo26n.pt')
-    # 开始训练
+if __name__ == "__main__":
+    model = YOLO("yolo26-p2.yaml").load("yolo26n.pt")
 
-    results = model.train(
-        data="Visdrone.yaml",      # 配置文件
-        epochs=10,                 # 轮数
-        imgsz=640,                 # 图片大小
-        batch=4,                   # 批次大小
-        device=0,                  # 使用GPU
-        workers=0                  # 关键：windows 必须设 workers=0！
+    model.train(
+        data="VisDrone.yaml",
+        epochs=100,
+        warmup_epochs=5.0,
+        close_mosaic=10,
+        imgsz=640,
+        batch=4,
+        optimizer="MuSGD",
+        lr0=0.025,
+        lrf=0.01,
+        cos_lr=True,
+        patience=30,
+        device=0,
+        project="runs_visdrone",
+        name="yolo26n_p2",
+        exist_ok=True,
+        pretrained=True,
+        amp=True,
+        workers=4,
+        cache="ram",
+        max_det=1000,
+        plots=True,
     )
