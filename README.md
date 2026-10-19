@@ -95,7 +95,7 @@ python train.py
 
 训练完成后，最佳权重保存在 `runs/detect/train-2/weights/best.pt`。
 
-已经训练好的修改后模型，更改为p2_yolo26n.pt保存在主目录，可以在第五步中直接调用
+已经训练好的修改后模型，更改为p2_yolo26n.pt保存在主目录，可以在第4步中直接调用
 
 ### 步骤 4：推理
 
