@@ -95,6 +95,8 @@ python train.py
 
 训练完成后，最佳权重保存在 `runs/detect/train-2/weights/best.pt`。
 
+已经训练好的修改后模型，更改为p2_yolo26n.pt保存在主目录，可以在第五步中直接调用
+
 ### 步骤 4：推理
 
 **单张图片：**
@@ -145,16 +147,16 @@ streamlit run streamlit_app.py
 ✅ 检测完成！共识别到 2 个目标
 ```
 
-- **训练产物**（`runs/detect/train-2/`）：训练曲线 `results.png`、混淆矩阵 `confusion_matrix.png`、F1 / PR 曲线及权重文件。
+- **训练产物**（`runs/detect/train-2/`、p2_yolo26n.pt）：训练曲线 `results.png`、混淆矩阵 `confusion_matrix.png`、F1 / PR 曲线及权重文件。
 
-### 参考指标（YOLO26n，10 epochs，imgsz=640）
+### 参考指标（p2_YOLO26n，100 epochs，imgsz=640）
 
 | 指标 | 数值 |
 | --- | --- |
-| Precision | 0.358 |
-| Recall | 0.274 |
-| mAP@50 | 0.251 |
-| mAP@50-95 | 0.140 |
+| Precision | 0.488 |
+| Recall | 0.375 |
+| mAP@50 | 0.369 |
+| mAP@50-95 | 0.203 |
 
 > 增加训练轮数、增大输入分辨率或使用更大的模型（如 yolo26s/m）可进一步提升精度。
 
